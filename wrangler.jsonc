@@ -2,13 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ai-cut-fast",
   "type": "javascript",
-  "main": "src/server.ts",
   "compatibility_date": "2025-09-24",
-  "compatibility_flags": ["nodejs_compat"],
-  "pages_build_output_dir": "dist/client",
-  "env": {
-    "production": {
-      "name": "ai-cut-fast"
-    }
-  }
+  "pages_build_output_dir": "dist/client"
 }
