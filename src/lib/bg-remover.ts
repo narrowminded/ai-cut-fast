@@ -82,6 +82,8 @@ export async function removeBackground(
     return out.toDataURL("image/png");
   }
 
-  octx.putImageData(new ImageData(rgba, raw.width, raw.height), 0, 0);
+  const id = new ImageData(raw.width, raw.height);
+  id.data.set(rgba);
+  octx.putImageData(id, 0, 0);
   return out.toDataURL("image/png");
 }
