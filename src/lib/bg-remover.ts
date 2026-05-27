@@ -1,23 +1,15 @@
-import { pipeline, env, type PreTrainedModel, type Processor } from "@huggingface/transformers";
+import { pipeline, env } from "@huggingface/transformers";
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
 
-type Segmenter = {
-  model: PreTrainedModel;
-  processor: Processor;
-  (image: HTMLCanvasElement | string): Promise<unknown>;
-};
-
-let segmenterPromise: Promise<Segmenter> | null = null;
+let segmenterPromise: Promise<any> | null = null;
 
 async function getSegmenter() {
   if (!segmenterPromise) {
-    segmenterPromise = pipeline("background-removal", "briaai/RMBG-1.4", {
+    segmenterPromise = (pipeline as any)("background-removal", "briaai/RMBG-1.4", {
       device: "webgpu",
-    }).catch(() =>
-      pipeline("background-removal", "briaai/RMBG-1.4")
-    ) as Promise<Segmenter>;
+    }).catch(() => (pipeline as any)("background-removal", "briaai/RMBG-1.4"));
   }
   return segmenterPromise;
 }
