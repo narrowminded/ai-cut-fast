@@ -1,0 +1,4 @@
+# Ignore Cloudflare-specific files during Vercel build
+wrangler.jsonc
+.wrangler
+.cloudflare
