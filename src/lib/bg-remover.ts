@@ -1,4 +1,4 @@
-import { pipeline, env } from "@huggingface/transformers";
+import { pipeline, env, RawImage } from "@huggingface/transformers";
 
 env.allowLocalModels = false;
 env.useBrowserCache = true;
@@ -32,27 +32,56 @@ export async function removeBackground(
   const segmenter = await getSegmenter();
 
   const MAX = 1024;
-  const scale = Math.min(1, MAX / Math.max(imageElement.naturalWidth, imageElement.naturalHeight));
-  const w = Math.round(imageElement.naturalWidth * scale);
-  const h = Math.round(imageElement.naturalHeight * scale);
+  const scale = Math.min(
+    1,
+    MAX / Math.max(imageElement.naturalWidth, imageElement.naturalHeight)
+  );
+  const w = Math.max(1, Math.round(imageElement.naturalWidth * scale));
+  const h = Math.max(1, Math.round(imageElement.naturalHeight * scale));
 
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(imageElement, 0, 0, w, h);
+  const srcCanvas = document.createElement("canvas");
+  srcCanvas.width = w;
+  srcCanvas.height = h;
+  const sctx = srcCanvas.getContext("2d")!;
+  sctx.drawImage(imageElement, 0, 0, w, h);
 
   onProgress?.("Detecting subject…");
-  const result = (await segmenter(canvas)) as Array<{ mask: { data: Uint8Array; width: number; height: number } }> | { mask: { data: Uint8Array; width: number; height: number } };
+  const dataUrl = srcCanvas.toDataURL("image/png");
+  const result = await segmenter(dataUrl);
 
-  const mask = Array.isArray(result) ? result[0].mask : result.mask;
+  // background-removal pipeline returns RawImage[] (RGBA with alpha applied)
+  const raw: RawImage = Array.isArray(result) ? result[0] : result;
 
-  onProgress?.("Applying transparency…");
-  const imageData = ctx.getImageData(0, 0, w, h);
-  for (let i = 0; i < mask.data.length; i++) {
-    imageData.data[i * 4 + 3] = mask.data[i];
+  onProgress?.("Rendering transparent PNG…");
+  const out = document.createElement("canvas");
+  out.width = raw.width;
+  out.height = raw.height;
+  const octx = out.getContext("2d")!;
+
+  // Convert RawImage data to ImageData
+  let rgba: Uint8ClampedArray;
+  if (raw.channels === 4) {
+    rgba = new Uint8ClampedArray(raw.data);
+  } else if (raw.channels === 3) {
+    rgba = new Uint8ClampedArray(raw.width * raw.height * 4);
+    for (let i = 0, j = 0; i < raw.data.length; i += 3, j += 4) {
+      rgba[j] = raw.data[i];
+      rgba[j + 1] = raw.data[i + 1];
+      rgba[j + 2] = raw.data[i + 2];
+      rgba[j + 3] = 255;
+    }
+  } else {
+    // single-channel mask: composite onto original
+    const mask = raw.data;
+    sctx.drawImage(imageElement, 0, 0, raw.width, raw.height);
+    const id = sctx.getImageData(0, 0, raw.width, raw.height);
+    for (let i = 0; i < mask.length; i++) id.data[i * 4 + 3] = mask[i];
+    out.width = raw.width;
+    out.height = raw.height;
+    out.getContext("2d")!.putImageData(id, 0, 0);
+    return out.toDataURL("image/png");
   }
-  ctx.putImageData(imageData, 0, 0);
 
-  return canvas.toDataURL("image/png");
+  octx.putImageData(new ImageData(rgba, raw.width, raw.height), 0, 0);
+  return out.toDataURL("image/png");
 }
