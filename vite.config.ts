@@ -7,5 +7,9 @@ export default defineConfig({
     ssr: {
       noExternal: [],
     },
+    build: {
+      outDir: 'dist/client',
+      emptyOutDir: true,
+    },
   },
 });
