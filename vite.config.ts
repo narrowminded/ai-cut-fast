@@ -1,11 +1,6 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, cloudflare (build-only),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+<<<<<<< HEAD
 // For Vercel deployment, build as a static SPA (client-only).
 // The app uses TanStack Router for client-side routing, no SSR needed.
 export default defineConfig({
@@ -13,5 +8,13 @@ export default defineConfig({
     ssr: {
       noExternal: [],
     },
+=======
+// For Cloudflare Pages: build client-only SPA
+// Do NOT build server/SSR to prevent wrangler.json in dist/client output
+export default defineConfig({
+  tanstackStart: {
+    // Disable server build for Pages (static-only deployment)
+    ssr: false,
+>>>>>>> 2342819b6abf9d31b1634f21d7818351dd592536
   },
 });
